@@ -37,7 +37,7 @@ static BOOL isRecording = NO;
     _recordFormat.mBytesPerFrame = (_recordFormat.mBitsPerChannel / 8) * _recordFormat.mChannelsPerFrame;
     _recordFormat.mFramesPerPacket = 1;
     _recordFormat.mBytesPerPacket = _recordFormat.mBytesPerFrame * _recordFormat.mFramesPerPacket;
-
+ 
     //初始化音频输入队列
     AudioQueueNewInput(&_recordFormat, inputBufferHandler, (__bridge void *)(self), NULL, NULL, 0, &_audioQueue);
 

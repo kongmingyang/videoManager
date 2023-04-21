@@ -12,16 +12,35 @@
   AudioStreamBasicDescription _recordFormat;
   dispatch_queue_t taskQueue;
   AudioComponentInstance componetInstance;//用来表示特定音频组件的实例
+    NSMutableData *videoData;
 }
 @end
 @implementation KMAudioRecord
++(instancetype)shareManager{
+    static KMAudioRecord *audioManager = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        if (audioManager == nil) {
+            audioManager = [[KMAudioRecord alloc]init];
+        }
+        
+        
+    });
+    return audioManager;
+}
+
 - (instancetype)init
 {
   self = [super init];
   if (self) {
+      [self setupAudioCapture];
+
+  }
+  return self;
+}
+-(void)setupAudioCapture{
     //重置下
-       memset(&_recordFormat, 0, sizeof(_recordFormat));
-      
+//        memset(&_recordFormat, 0, sizeof(_recordFormat));
         AudioComponentDescription acd;
          acd.componentType = kAudioUnitType_Output;//类型输出
          //acd.componentSubType = kAudioUnitSubType_VoiceProcessingIO;//回声消除
@@ -38,27 +57,27 @@
          UInt32 flagOne = 1;
          //打开IO，1 是麦克风，0 是扬声器
          AudioUnitSetProperty(componetInstance, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Input, 1, &flagOne, sizeof(flagOne));
- 
+    
      _recordFormat.mSampleRate = 8000; //采样率
-     _recordFormat.mChannelsPerFrame = 1;//声道数
+     _recordFormat.mChannelsPerFrame = 1;//1是单声道，2就是立体声。这里的数量决定了AudioBufferList的mBuffers长度是1还是2。
      _recordFormat.mFormatID = kAudioFormatLinearPCM;
      _recordFormat.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kLinearPCMFormatFlagIsPacked ;
-    _recordFormat.mBitsPerChannel = 16;
+    _recordFormat.mBitsPerChannel = 16;//采样位数，数字越大，分辨率越高。16位可以记录65536个数，一般来说够用了。
     _recordFormat.mBytesPerFrame = (_recordFormat.mBitsPerChannel / 8) * _recordFormat.mChannelsPerFrame;
     _recordFormat.mFramesPerPacket = 1;// 非压缩数据，固定填1
     _recordFormat.mBytesPerPacket = _recordFormat.mBytesPerFrame * _recordFormat.mFramesPerPacket;
-      
       AURenderCallbackStruct cb;//采集回调
          cb.inputProcRefCon = (__bridge  void *)(self);
          cb.inputProc = handleInputBuffer;
          status = AudioUnitSetProperty(componetInstance, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &_recordFormat, sizeof(_recordFormat));//设置流格式
+      
          status = AudioUnitSetProperty(componetInstance, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 1, &cb, sizeof(cb));//设置回调
      
-      //设置初始化
+//      //设置初始化
        AVAudioSession *session = [AVAudioSession sharedInstance];
         NSError *error;
         //设置采样率
-        [session setPreferredSampleRate:44100 error:&error];
+       [session setPreferredSampleRate:8000 error:&error];
         //设置类型
         [session setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker | AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers error:&error];
         //
@@ -67,13 +86,10 @@
         
         //创建一个线程
         taskQueue = dispatch_queue_create("com.mt.audioCapture", NULL);
-      
-      
+    OSStatus result = AudioUnitInitialize(componetInstance);
+    NSLog(@"result %d", result);
 
-  }
-  return self;
 }
-
 -(void)startRecording
 {
   // 开始录音
@@ -133,6 +149,7 @@ static OSStatus handleInputBuffer(void *inRefCon,
             //            //音频数据
 //            bufferList.mBuffers[0].mData
             NSData *data = [NSData dataWithBytes:bufferList.mBuffers[0].mData length:bufferList.mBuffers[0].mDataByteSize];
+            
             [[NSNotificationCenter defaultCenter] postNotificationName:@"EYRecordNotifacation" object:@{@"data" : data}];
             
             //            //音频长度
@@ -163,8 +180,16 @@ static OSStatus handleInputBuffer(void *inRefCon,
     dispatch_async(taskQueue, ^{
           NSLog(@"停止录音");
           AudioOutputUnitStop(self->componetInstance);
+        
       });
   NSLog(@"停止录音");
 }
-
+-(void)dealloc{
+    // 清理音频采集实例。
+       if (componetInstance) {
+           AudioOutputUnitStop(componetInstance);
+           AudioComponentInstanceDispose(componetInstance);
+           componetInstance = nil;
+       }
+}
 @end

@@ -15,6 +15,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 //停止录音
 - (void)stopRecording;
+//初始化音频文件
+-(void)setupAudioCapture;
+//单利
++(instancetype)shareManager;
 @end
 
 NS_ASSUME_NONNULL_END

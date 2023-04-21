@@ -46,7 +46,7 @@ const uint32_t CONST_BUFFER_SIZE = 0x10000;
     //设置初始化
      AVAudioSession *session = [AVAudioSession sharedInstance];
       //设置采样率
-      [session setPreferredSampleRate:44100 error:&error];
+      [session setPreferredSampleRate:8000 error:&error];
       //设置类型
       [session setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker | AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers error:&error];
       //
@@ -74,9 +74,9 @@ const uint32_t CONST_BUFFER_SIZE = 0x10000;
     
     UInt32 flag = 1;
     if (flag) {
-    
+        //设置音频组件播放或者录音【此处选择播放】
         status = AudioUnitSetProperty(audioUnit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, OUTPUT_BUS, &flag, sizeof(flag));
-        
+        //【播放必定选kAudioUnitScope_Output!!!
     }
     if (status) {
         NSLog(@"AudioUnitSetProperty error with status:%d", status);
@@ -112,12 +112,12 @@ const uint32_t CONST_BUFFER_SIZE = 0x10000;
       playCallback.inputProcRefCon = (__bridge void *)self;
       AudioUnitSetProperty(audioUnit,
                            kAudioUnitProperty_SetRenderCallback,
-                           kAudioUnitScope_Input,
+                           kAudioUnitScope_Global,
                            OUTPUT_BUS,
                            &playCallback,
                            sizeof(playCallback));
       
-      
+      //设置好后，初始化音频组件！！
       OSStatus result = AudioUnitInitialize(audioUnit);
       NSLog(@"result %d", result);
     
@@ -134,30 +134,27 @@ static OSStatus PlayCallback(void *inRefCon,
                              AudioBufferList * __nullable    ioData) {
     
     
-   
+    memset(ioData->mBuffers[0].mData, 0, ioData->mBuffers[0].mDataByteSize);
     KMAudioPlayer *player = (__bridge KMAudioPlayer *)inRefCon;
 
-
+    AudioBuffer buffer = ioData->mBuffers[0];
+    buffer.mDataByteSize = player.length;
+    buffer.mData = player.mData;
     
     if(player.mData){
-        AudioBuffer inBuffer = ioData->mBuffers[0];
-//        memcpy(inBuffer.mData,player.mData ,player.length);
-        ioData->mBuffers[0].mDataByteSize = player.length;
-        ioData->mBuffers[0].mData = player.mData;
-        memset(ioData->mBuffers[0].mData, 0, ioData->mBuffers[0].mDataByteSize);
+        AudioBuffer *inBuffer = &ioData->mBuffers[0];
+        memcpy(inBuffer->mData,player.mData ,player.length);
+        inBuffer->mDataByteSize = player.length;
+//        ioData->mBuffers[0].mDataByteSize = player.length;
+//        ioData->mBuffers[0].mData = player.mData;
+//         memcpy(<#void *__dst#>, <#const void *__src#>, <#size_t __n#>)
+//        memset(ioData->mBuffers[0].mData, 0, ioData->mBuffers[0].mDataByteSize);
     }else{
         for (int iBuffer = 0; iBuffer < ioData->mNumberBuffers; ++iBuffer) {
                memset(ioData->mBuffers[iBuffer].mData, 0, ioData->mBuffers[iBuffer].mDataByteSize);
            }
     }
-    
-//    for (int i = 0; i < ioData->mNumberBuffers; i++) {
-//        AudioBuffer buffer = ioData->mBuffers[i];
-//        UInt16 *frameBuffer = buffer.mData;
-//        for (int j = 0; j < inNumberFrames; j++) {
-//            frameBuffer[j] = 0;
-//        }
-//    }
+
     
 //    ioData = player.bufferList;
     NSLog(@"out size: %d", ioData->mBuffers[0].mDataByteSize);
