@@ -62,6 +62,14 @@
     NSLog(@"dataPlayer dealloc...");
     
 }
+-(void)releasePlayer{
+    if (audioQueue !=nil) {
+        AudioQueueStop(audioQueue,true);
+
+    }
+    audioQueue =nil;
+    NSLog(@"dataPlayer dealloc...");
+}
 -(void)resetPlay{
     if (audioQueue != nil) {
         AudioQueueReset(audioQueue);
@@ -70,7 +78,7 @@
 static void AudioPlayerAQInputCallback(void* inUserData,AudioQueueRef outQ, AudioQueueBufferRef outQB) {
     AudioPlayerManager* player = (__bridge AudioPlayerManager*)inUserData;
     [player playerCallback:outQB];
-    NSLog(@"player callback");
+//    NSLog(@"player callback");
 }
 
 - (void)setupAudioQueue {
@@ -145,7 +153,7 @@ static void AudioPlayerAQInputCallback(void* inUserData,AudioQueueRef outQ, Audi
     }
    
 
-    NSLog(@"last count packet %lu",(unsigned long)self.cachDataArray.count);
+//    NSLog(@"last count packet %lu",(unsigned long)self.cachDataArray.count);
     audioQueueBuffer->mAudioDataByteSize = firstData.length;
     
     Byte* audiodata = (Byte*)audioQueueBuffer->mAudioData;
@@ -158,7 +166,7 @@ static void AudioPlayerAQInputCallback(void* inUserData,AudioQueueRef outQ, Audi
     if (status != 0) {
         NSLog(@"en queue buffer failed! == %d",(int)status);
     }else {
-      NSLog(@"DataPlayer play dataSize:%ld", firstData.length);
+//      NSLog(@"DataPlayer play dataSize:%ld", firstData.length);
     }
     
     [sysnLock unlock];

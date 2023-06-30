@@ -23,6 +23,8 @@
 - (void)play:(NSData *)data;
 - (void)stop;
 -(void)resetPlay;
+//释放播放器
+- (void)releasePlayer;
 @end
 
 

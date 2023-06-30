@@ -84,7 +84,7 @@ enum NALUnitType {
 - (void)initDecoder:(DecodeImgBlock)block
 {
     _decodeBlock = block;
-    _decompressionSession = NULL;
+//    _decompressionSession = NULL;
 }
 
 - (void)decoderFaile:(DecoderFaile)block{
