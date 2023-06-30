@@ -22,6 +22,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    //由于涉及项目代码，这里只是简单写了使用方法
     // Do any additional setup after loading the view.
 }
 -(void)playAudio{
